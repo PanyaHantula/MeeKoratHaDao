@@ -1,2 +1,11 @@
 pyuic5 -x main_gui.ui -o main_gui.py
 pyside6-uic main_gui.ui -o main_gui.py
+
+auto run python
+# method 1
+sudo nano /etc/xdg/lxsession/LXDE-pi/autostart
+
+# methond 2
+sudo crontab -e
+insert comand
+@reboot python3.11 /home/raspberry/Desktop/MeeKorat5Dao/main.py &

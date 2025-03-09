@@ -17,9 +17,9 @@ class Database:
                 password="raspberry",
                 #password="p@ssw0rd",
                 database="meekorat5dow"
-                )    
+                )     
             self.cursor = self.db.cursor()
-            # print("#: Connect SQL Database complete")
+            #print("#: Connect SQL Database complete")
         except:
             print("#: Error connecting Database")   
         
@@ -33,36 +33,21 @@ class Database:
         self.cursor.execute(cmd)
         return self.cursor.fetchall()
     
+    def record(self,val):
+        # (`orderID`, `weight`, `basketNumber`, `grade`, `materialType`, `staffID`, `customerID`, `building`, `container`) VALUES ('20250304002', '21', '02', 'B', 'buriram', '0010', '102', 'A', 'basket');
+        sql = "INSERT INTO dataLoger (start_time, total_product, preformance, power,energy) VALUES " + str(val)
+        self.cursor.execute(sql)
+        self.db.commit()
+        return self.cursor.fetchall()
+    
     
 if __name__ == "__main__":
     db = Database()
     
-    cmd = "SELECT * FROM dataLoger WHERE total_product = 9"
-    resultes = db.query(cmd)
-    for row in resultes:
-        print (row)   
-        
-        
-        
-# import sys,sqlite3
-# import mysql.connector
-
-# try:
-#     db = mysql.connector.connect(
-#         host="localhost",
-#         user="root",
-#         password="raspberry",
-#         database="meekorat5dow"
-#         )    
-
-#     # Create a Cursor object to execute queries.
-#     cur = db.cursor()
+    val = ("13:55:00","12","8.1","8.1","0.0")
+    #sql = "INSERT INTO dataLoger (start_time, total_product, preformance, power,energy) VALUES " + str(val)
+    #db.query(sql)  
+    db.record(val)     
+    db.select_all()
     
-#     # Select data from table using SQL query.
-#     cur.execute("SELECT * FROM dataLoger")
     
-#     # print the first and second columns      
-#     for row in cur.fetchall():
-#         print (row)
-# except:
-#     print("Error connecting Database")       

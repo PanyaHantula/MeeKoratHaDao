@@ -2,8 +2,7 @@
 #           Pyside 6 + Qt Designer         #
 ############################################
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QPushButton, \
-                            QMessageBox, QWidget, QVBoxLayout, QLabel, QLineEdit
+from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QHeaderView, QMessageBox
 from PySide6.QtCore import QThread, QObject, Signal, Slot, QTimer
 import datetime
 import time
@@ -72,13 +71,19 @@ class PZEM_Worker(QObject):
         while True:
             rec = self.ser.readline()
             if len(rec) > 0:
-                data = json.loads(rec.decode('utf-8'))
-                # {"voltage":235.10,"current":0.07,"power":7.60,"energy":0.00,"frequency":50.00,"pf":0.44}
-                #print(f"JSON : {rec}")
-                #print("JSON Parse")
-                #print(data['power'])
-                #print(data['energy'])
-                self.PZEM_ThreadProgress.emit(str(data['power']),str(data['energy']))
+                try:
+                    data = json.loads(rec.decode('utf-8'))
+                    # {"voltage":235.10,"current":0.07,"power":7.60,"energy":0.00,"frequency":50.00,"pf":0.44}
+                    # print(f"JSON : {rec}")
+                    #print("JSON Parse")
+                    #print(data['power'])
+                    #print(data['energy'])
+                    self.PZEM_ThreadProgress.emit(str(data['power']),str(data['energy']))
+                
+                except:
+                    print("Error \n Serial Recive: ")
+                    print(rec)
+                    
             time.sleep(2)
             
     def reset(self):
@@ -91,6 +96,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.showFullScreen()
+        # self.showMaximized()
         self.db = Database()
         self.db.connect_db()
         
@@ -105,9 +112,11 @@ class MainWindow(QMainWindow):
         self.ui.btn_update.clicked.connect(self.add_DataToDataBase)
         self.ui.btn_LoadDB.clicked.connect(self.loadDataBaseToResulteTable)
         self.ui.btn_Delete.clicked.connect(self.delete_DataFromDataBase)
-        # self.ui.btn_Edit.clicked.connect(self.ShowEditWindows)
-        self.ui.btn_Edit.hide()
-        
+        self.ui.btn_exit.clicked.connect(self.exit)
+    
+    def exit(self):
+        self.close()
+            
     def setClock(self):
         timer = QTimer(self)
         timer.timeout.connect(self.showTime)
@@ -197,12 +206,16 @@ class MainWindow(QMainWindow):
         self.ui.twDB.setRowCount(resultes[0][0])
         self.ui.twDB.setColumnCount(6)
         
+        header = self.ui.twDB.horizontalHeader()         
+        for col in range(6):
+            header.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+
         self.ui.twDB.setHorizontalHeaderItem(0, QTableWidgetItem("เวลาบันทึก"))
         self.ui.twDB.setHorizontalHeaderItem(1, QTableWidgetItem("เวลาเริ่มงาน"))
-        self.ui.twDB.setHorizontalHeaderItem(2, QTableWidgetItem("จำนวนทั้งหมดที่ผลิตได้(ชิ้น)"))
-        self.ui.twDB.setHorizontalHeaderItem(3, QTableWidgetItem("ความเร็วในการผลิต(ชิ้น/นาที)"))
+        self.ui.twDB.setHorizontalHeaderItem(2, QTableWidgetItem("ผลิตได้(ชิ้น)"))
+        self.ui.twDB.setHorizontalHeaderItem(3, QTableWidgetItem("ความเร็ว(ชิ้น/นาที)"))
         self.ui.twDB.setHorizontalHeaderItem(4, QTableWidgetItem("กำลังไฟฟ้า(วัตต์)"))
-        self.ui.twDB.setHorizontalHeaderItem(5, QTableWidgetItem("พลังงานไฟฟ้าที่ใช้ไป(หน่วย)"))
+        self.ui.twDB.setHorizontalHeaderItem(5, QTableWidgetItem("หน่วยไฟฟ้าที่ใช้ไป(หน่วย)"))
         
         # load data in DB
         sql = ("select * from dataLoger")
@@ -232,12 +245,16 @@ class MainWindow(QMainWindow):
         self.ui.tw_Resulte_DB.setRowCount(resultes[0][0])
         self.ui.tw_Resulte_DB.setColumnCount(6)
         
+        header = self.ui.tw_Resulte_DB.horizontalHeader()         
+        for col in range(6):
+            header.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+        
         self.ui.tw_Resulte_DB.setHorizontalHeaderItem(0, QTableWidgetItem("เวลาบันทึก"))
         self.ui.tw_Resulte_DB.setHorizontalHeaderItem(1, QTableWidgetItem("เวลาเริ่มงาน"))
-        self.ui.tw_Resulte_DB.setHorizontalHeaderItem(2, QTableWidgetItem("จำนวนทั้งหมดที่ผลิตได้(ชิ้น)"))
-        self.ui.tw_Resulte_DB.setHorizontalHeaderItem(3, QTableWidgetItem("ความเร็วในการผลิต(ชิ้น/นาที)"))
+        self.ui.tw_Resulte_DB.setHorizontalHeaderItem(2, QTableWidgetItem("ผลิตได้(ชิ้น)"))
+        self.ui.tw_Resulte_DB.setHorizontalHeaderItem(3, QTableWidgetItem("ความเร็ว(ชิ้น/นาที)"))
         self.ui.tw_Resulte_DB.setHorizontalHeaderItem(4, QTableWidgetItem("กำลังไฟฟ้า(วัตต์)"))
-        self.ui.tw_Resulte_DB.setHorizontalHeaderItem(5, QTableWidgetItem("พลังงานไฟฟ้าที่ใช้ไป(หน่วย)"))
+        self.ui.tw_Resulte_DB.setHorizontalHeaderItem(5, QTableWidgetItem("หน่วยไฟฟ้าที่ใช้ไป(หน่วย)"))
         
         if int(resultes[0][0]) > 0 :
                 
@@ -264,12 +281,18 @@ class MainWindow(QMainWindow):
                     value = float(self.ui.tw_Resulte_DB.item(row, col).text())
                     output[f'column_{col}'].append(value)
 
+            total = sum(output['column_2'])
+            Perfomancec = sum(output['column_3']) / totalRowCount
+            Power = sum(output['column_4']) / totalRowCount
+            energy = sum(output['column_5']) / totalRowCount
+            
             self.ui.lbl_Resulte_DateStart.setText(dateStart)
             self.ui.lbl_Resulte_DateStart_2.setText(dateEnd)
-            self.ui.lbl_Resulte_TotalCount.setText(str(sum(output['column_2'])))
-            self.ui.lbl_Resulte_Preformance.setText(str(sum(output['column_3']) / totalRowCount))
-            self.ui.lbl_Resulte_power.setText(str(sum(output['column_4']) / totalRowCount))
-            self.ui.lbl_Resulte_energy.setText(str(sum(output['column_5']) / totalRowCount))
+            self.ui.lbl_Resulte_TotalCount.setText(str(total))
+            self.ui.lbl_Resulte_Preformance.setText(str("{:.2f}".format(Perfomancec)))
+            self.ui.lbl_Resulte_power.setText(str("{:.2f}".format(Power)))
+            self.ui.lbl_Resulte_energy.setText(str("{:.2f}".format(energy)))
+            
         
         else:
             # Meassage Box
@@ -296,9 +319,7 @@ class MainWindow(QMainWindow):
         if button == QMessageBox.Yes:
             try:  
                 val = (startTime,CountTotal,Preformance,Power,Energy)
-                sql = "INSERT INTO dataLoger (start_time, total_product, preformance, power,energy) VALUES " + str(val)
-                resultes = self.db.query(sql)
-                
+                self.db.record(val)
                 self.loadDatabase()
                 self.resetData()
 
